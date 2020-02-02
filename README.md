@@ -1,0 +1,2 @@
+# high_concurrency_lottery
+这是一个用于学习高并发与分布式的高性能抽奖系统
