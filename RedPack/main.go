@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,6 +27,7 @@ import (
  */
 // 文件日志
 var logger *log.Logger
+var uuid uint32 = 1000000
 // 当前有效红包列表，int64是红包唯一ID，[]uint是红包里面随机分到的金额（单位分）
 var packageList *sync.Map = new(sync.Map)
 func main() {
@@ -117,12 +119,9 @@ func (c *lotteryController) GetSet() string {
 		leftNum--
 	}
 	// 最后再来一个红包的唯一ID
-	id := r.Uint32()
-	for _,ok := packageList.Load(id);ok; {
-		id = r.Uint32()
-	}
+	id := GetIncreaseID(&uuid)
 	//packageList[id] = list
-	packageList.Store(uint(id),list)
+	packageList.Store(id,list)
 	logger.Printf("/get?id=%d&uid=%d&num=%d\n", id, uid, num)
 	// 返回抢红包的URL
 	return fmt.Sprintf("/get?id=%d&uid=%d&num=%d\n", id, uid, num)
@@ -164,3 +163,14 @@ func (c *lotteryController) GetGet() string {
 	return fmt.Sprintf("恭喜你抢到一个红包，金额为:%d\n", money)
 }
 
+func GetIncreaseID(ID *uint32) uint32 {
+	var n, v uint32
+	for {
+		v = atomic.LoadUint32(ID)
+		n = v + 1
+		if atomic.CompareAndSwapUint32(ID, v, n) {
+			break
+		}
+	}
+	return n
+}
