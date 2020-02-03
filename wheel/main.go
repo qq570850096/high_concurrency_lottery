@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -24,6 +25,7 @@ import (
  * wrk -t10 -c100 -d5 "http://localhost:8080/prize"
  */
 
+
 var logger *log.Logger
 
 // 奖品中奖概率
@@ -32,7 +34,7 @@ type Prate struct {
 	Total int		// 总数量限制，0 表示无限数量
 	CodeA int		// 中奖概率起始编码（包含）
 	CodeB int		// 中奖概率终止编码（包含）
-	Left int 		// 剩余数
+	Left int32 		// 剩余数
 }
 // 奖品列表
 var prizeList []string = []string{
@@ -42,8 +44,9 @@ var prizeList []string = []string{
 	"",							// 没有中奖
 }
 // 奖品的中奖概率设置，与上面的 prizeList 对应的设置
+var temp int32 = 10000
 var rateList []Prate = []Prate{
-	Prate{100, 1, 0, 9999, 10000},
+	Prate{100, 1, 0, 9999, temp},
 	//Prate{2, 2, 1, 2, 2},
 	//Prate{5, 10, 3, 5, 10},
 	//Prate{1000,0, 0, 9999, 0},
@@ -113,7 +116,7 @@ func (c *lotteryController) GetPrize() string {
 		return myprize
 	} else if prizeRate.Left > 0 {
 		// 还有剩余奖品
-		prizeRate.Left -= 1
+		atomic.AddInt32(&prizeRate.Left,-1)
 		fmt.Println("中奖： ", myprize)
 		logger.Println("中奖： ", myprize)
 		return myprize
